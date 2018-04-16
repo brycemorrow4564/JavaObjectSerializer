@@ -1,0 +1,24 @@
+Textual (StringBuffer)
+
+
+BooleanSerializer <Value Serialization> -> <class name serialization> <Integer serialization of truth value> <delimiter> 
+DoubleSerializer <Value Serialization> -> <class name serialization> <Double serialization> <delimiter> 
+FloatSerializer <Value Serialization> -> <class name serialization> <Float serialization> <delimiter> 
+IntegerSerializer <Value Serialization> -> <class name serialization> <Integer serialization> <delimiter> 
+LongSerializer <Value Serialization> -> <class name serialization> <Long serialization> <delimiter> 
+ShortSerializer <Value Serialization> -> <class name serialization> <Short serialization> <delimiter> 
+StringSerializer <Value Serialization> -> <class name serialization> <Integer serialization of string length> <String serialization> <delimiter> 
+
+ArraySerializer <Value Serialization> -> <class name serialization> <double serialization>
+
+
+
+HashSetSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
+ArraySerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
+EnumSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
+NullSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
+
+DispatchingSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
+
+
+Binary (ByteBuffer) 
