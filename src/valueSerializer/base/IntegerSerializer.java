@@ -7,12 +7,15 @@ import java.util.ArrayList;
 
 import general.AStringBuffer;
 import general.SerializerRegistry;
+import util.annotations.Comp533Tags;
+import util.annotations.Tags;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationFinished;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationInitiated;
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationFinished;
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationInitiated;
 import valueSerializer.ValueSerializer;
 
+@Tags({Comp533Tags.INTEGER_SERIALIZER})
 public class IntegerSerializer implements ValueSerializer {
 
 	@Override
@@ -22,16 +25,14 @@ public class IntegerSerializer implements ValueSerializer {
 			ExtensibleValueSerializationInitiated.newCase(this, anObject, anOutputBuffer);
 			Integer value = (Integer) anObject; 
 			Class bufferClass = anOutputBuffer.getClass(); 
-			if (bufferClass == ByteBuffer.class) {
-				//Binary encoding 
+			if (ByteBuffer.class.isAssignableFrom(bufferClass)) {
 				ByteBuffer bBuff = (ByteBuffer) anOutputBuffer;
 				bBuff.put(Integer.class.getName().getBytes());
 				bBuff.putInt(value);
 			} else if (bufferClass == AStringBuffer.class) {
-				//Textual encoding 
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
 				Object[] args = {Integer.class.getName() + value + ValueSerializer.DELIMETER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.sbAppend, args);
+				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Integer value serializer");
 			}
@@ -44,40 +45,21 @@ public class IntegerSerializer implements ValueSerializer {
 	@Override
 	public Object objectFromBuffer(Object anInputBuffer, Class aClass, ArrayList<Object> retrievedObjects)
 			throws StreamCorruptedException, NotSerializableException {
-		Integer retVal = null; 
+		Object retVal = null; 
 		if (aClass == Integer.class) {
 			ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, aClass);
-			if (anInputBuffer instanceof ByteBuffer) {
-				//Decode from binary 
-				ByteBuffer bBuff = (ByteBuffer) anInputBuffer; 
-				int strLen = bBuff.getInt();
-				byte[] strBytes = new byte[strLen]; 
-				bBuff.get(strBytes);
-				retVal = Integer.parseInt(new String(strBytes));
+			if (ByteBuffer.class.isAssignableFrom(anInputBuffer.getClass())) {
+				retVal = ((ByteBuffer) anInputBuffer).getInt();
 			} else if (anInputBuffer instanceof AStringBuffer) {
-				//Decode from textual representation 
-				AStringBuffer sBuff = (AStringBuffer) anInputBuffer;
-				String c = null;
-				StringBuilder sb = new StringBuilder(); 
-				while (true) {
-					c = sBuff.readCharacter(); 
-					if (c == null) {
-						throw new NotSerializableException("Unexpectedly reached end of StringBuffer");
-					} else if (c.equals(ValueSerializer.DELIMETER)) {
-						break; 
-					} else {
-						sb.append(c);
-					}
-				}
-				retVal = Integer.parseInt(sb.toString());
+				retVal = Integer.parseInt(((AStringBuffer) anInputBuffer).readStringBufferTillDelimiter());
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Integer value serializer");
 			}
-			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, retVal, retrievedObjects);
-			return retVal;  
+			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, retVal, retrievedObjects); 
 		} else {
 			throw new NotSerializableException("Tried to deserialize a non Integer type with the Integer value serialzer");
 		}
+		return aClass.cast(retVal);  
 	}
 
 }

@@ -1,16 +1,16 @@
-package valueSerializer.typeIndependent;
+package valueSerializer.map;
 
 import java.io.NotSerializableException;
 import java.io.StreamCorruptedException;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 
 import general.AStringBuffer;
 import general.SerializerRegistry;
 import util.annotations.Comp533Tags;
 import util.annotations.Tags;
-import util.misc.RemoteReflectionUtility;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationFinished;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationInitiated;
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationFinished;
@@ -18,65 +18,61 @@ import util.trace.port.serialization.extensible.ExtensibleValueSerializationInit
 import valueSerializer.DispatchingSerializer;
 import valueSerializer.ValueSerializer;
 
-@Tags({Comp533Tags.LIST_PATTERN_SERIALIZER})
-public class ListPatternSerializer implements ValueSerializer {
-	
+@Tags({Comp533Tags.MAP_SERIALIZER})
+public class HashMapSerializer implements ValueSerializer {
+
 	@Override
 	public void objectToBuffer(Object anOutputBuffer, Object anObject, ArrayList<Object> visitedObjects)
 			throws NotSerializableException {
-		if (RemoteReflectionUtility.isList(anObject.getClass())) {
+		if (anObject instanceof HashMap) {
 			ExtensibleValueSerializationInitiated.newCase(this, anObject, anOutputBuffer);
+			HashMap map = (HashMap) anObject; 
 			Class bufferClass = anOutputBuffer.getClass(); 
 			if (ByteBuffer.class.isAssignableFrom(bufferClass)) {
-				//Binary encoding 
 				ByteBuffer bBuff = (ByteBuffer) anOutputBuffer;
-				bBuff.put(SerializerRegistry.TYPE_FREE_HEADER.getBytes());
+				bBuff.put(HashMap.class.getName().getBytes());
+				bBuff.putInt(map.size());
 			} else if (bufferClass == AStringBuffer.class) {
-				//Textual encoding 
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {SerializerRegistry.TYPE_FREE_HEADER};
+				Object[] args = {HashMap.class.getName() + map.size() + ValueSerializer.DELIMETER};
 				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
 			} else {
-				throw new NotSerializableException("Buffer of unsupported type passed to List Pattern value serializer");
+				throw new NotSerializableException("Buffer of unsupported type passed to HashMap value serializer");
 			}
 			DispatchingSerializer ds = SerializerRegistry.getDispatchingSerializer(); 
-			String className = anObject.getClass().getName(); 
-			Integer arrLen = RemoteReflectionUtility.listSize(anObject);
-			ds.objectToBuffer(anOutputBuffer, className, visitedObjects);
-			ds.objectToBuffer(anOutputBuffer, arrLen, visitedObjects);
-			for (int i = 0; i < arrLen; i++) {
-				ds.objectToBuffer(anOutputBuffer, RemoteReflectionUtility.listGet(anObject, i), visitedObjects);
+			Iterator iter = map.keySet().iterator();
+			Object key = null; 
+			while (iter.hasNext()) {
+				key = iter.next(); 
+				ds.objectToBuffer(anOutputBuffer, key, visitedObjects);
+				ds.objectToBuffer(anOutputBuffer, map.get(key), visitedObjects);
 			}
 			ExtensibleValueSerializationFinished.newCase(this, anObject, anOutputBuffer, visitedObjects);
 		} else {
-			throw new NotSerializableException("Tried to serialize a non List type with the ListPattern value serializer");
+			throw new NotSerializableException("Tried to serialize a non HashMap type with the HashMap value serializer");
 		}
 	}
 
 	@Override
 	public Object objectFromBuffer(Object anInputBuffer, Class aClass, ArrayList<Object> retrievedObjects)
 			throws StreamCorruptedException, NotSerializableException {
-		if (RemoteReflectionUtility.isList(aClass)) {
+		if (aClass == HashMap.class) {
 			ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, aClass);
 			DispatchingSerializer ds = SerializerRegistry.getDispatchingSerializer();
-			Object list = null; 
-			try {
-				list = aClass.newInstance();
-				retrievedObjects.add(list);
-				Integer len = (Integer) ds.objectFromBuffer(anInputBuffer, retrievedObjects);
-				for (int i = 0; i < len; i++) {
-					RemoteReflectionUtility.listAdd(list, ds.objectFromBuffer(anInputBuffer, retrievedObjects));
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
+			HashMap map = new HashMap();
+			Integer numKeys = (Integer) SerializerRegistry.getValueSerializer(Integer.class)
+					.objectFromBuffer(anInputBuffer, Integer.class, retrievedObjects);
+			for (int i = 0; i < numKeys; i++) {
+				Object k = ds.objectFromBuffer(anInputBuffer, retrievedObjects);
+				Object v = ds.objectFromBuffer(anInputBuffer, retrievedObjects);
+				map.put(k, v);
 			}
-			retrievedObjects.add(list);
-			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, list, retrievedObjects);
-			return list; 
+			retrievedObjects.add(map);
+			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, map, retrievedObjects);
+			return map;
 		} else {
-			throw new NotSerializableException("Tried to deserialize to non List type in List Pattern value serializer");
+			throw new NotSerializableException("Tried to serialize a non HashMap type with the HashMap value serializer");
 		}
 	}
-
 
 }

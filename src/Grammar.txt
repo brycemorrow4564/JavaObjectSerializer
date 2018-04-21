@@ -1,24 +1,42 @@
-Textual (StringBuffer)
+Logical Serialization Grammar 
+Note: For textual value serialization, we place a delimeter in one of the two following locations 
+1. For base types (excluding String), delimiter follows value
+2. For String (base) Collection, Map, TypeIndependent serializations, delimeter follows integer denoting size of structure 
+
+<Object Serialization> → <TypeName> <Value Serialization>
+<Value Serialization> → <Base Serialization> | <Collection Seralization> | 
+						<Map Serialization> | <Type Independent Seralization> | <Null Serialization> 
+
+Base: Boolean, Double, Float, Integer, Long, Short, String 
+<Boolean Serialization> -> <ClassName> <Integer truth value as bytes> 
+<Double Serialization> -> <ClassName> <Double as bytes> 
+<Float Serialization> -> <ClassName> <Float as bytes> 
+<Long Serialization> -> <ClassName> <Long as bytes> 
+<Integer Serialization> -> <ClassName> <Integer as bytes> 
+<Short Serialization> -> <ClassName> <Short as bytes> 
+<String Serialization> -> <ClassName> <Integer as bytes (length of String)> <Character Serialization as bytes>* 
+
+Collection: ArrayList, HashSet, Vector
+<ArrayList> -> <ClassName> <Integer as bytes (Size of Array)> <Object Serialization>*
+<HashSet> -> <ClassName> <Integer as bytes (Size of HashSet)> <Object Serialization>*
+<ArrayList> -> <ClassName> <Integer as bytes (Size of Vector)> <Object Serialization>*
+
+Map: HashMap, Hashtable
+HashMap -> <ClassName> <Integer as bytes (num key, value pairs)> <Object serialization (Key)>* <Object serialization (Value)>*
+Hashtable -> <ClassName> <Integer as bytes (num key, value pairs)> <Object serialization (Key)>* <Object serialization (Value)>*
+
+TypeIndependent: Array, Bean, Enum, ListPattern
+Array -> <TypeFree Header> <String as bytes (class name)> <String as bytes (component class name)> <Integer as bytes (Size of Array)> <Object Serialization>*
+Bean -> <TypeFree Header> <String as bytes (class name)> <Integer as bytes (num bean props)> <String as bytes (Prop name)>* <Object Serialization (Prop Value)>*
+Enum -> <TypeFree Header> <String as bytes (class name)> <String as bytes (enum value)> 
+ListPattern -> <TypeFree Header> <String as bytes (class name)> <Integer as bytes (num elems)> <Object Serialization>*
+
+SpecialCase: Null
+Null -> <Null Header> <String as bytes (Null value)> 
 
 
-BooleanSerializer <Value Serialization> -> <class name serialization> <Integer serialization of truth value> <delimiter> 
-DoubleSerializer <Value Serialization> -> <class name serialization> <Double serialization> <delimiter> 
-FloatSerializer <Value Serialization> -> <class name serialization> <Float serialization> <delimiter> 
-IntegerSerializer <Value Serialization> -> <class name serialization> <Integer serialization> <delimiter> 
-LongSerializer <Value Serialization> -> <class name serialization> <Long serialization> <delimiter> 
-ShortSerializer <Value Serialization> -> <class name serialization> <Short serialization> <delimiter> 
-StringSerializer <Value Serialization> -> <class name serialization> <Integer serialization of string length> <String serialization> <delimiter> 
-
-ArraySerializer <Value Serialization> -> <class name serialization> <double serialization>
 
 
 
-HashSetSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
-ArraySerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
-EnumSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
-NullSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
-
-DispatchingSerializer <typeInd Value Serialization> -> <class name serialization> <double serialization>
 
 
-Binary (ByteBuffer) 

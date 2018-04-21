@@ -7,12 +7,15 @@ import java.util.ArrayList;
 
 import general.AStringBuffer;
 import general.SerializerRegistry;
+import util.annotations.Comp533Tags;
+import util.annotations.Tags;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationFinished;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationInitiated;
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationFinished;
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationInitiated;
 import valueSerializer.ValueSerializer;
 
+@Tags({Comp533Tags.BOOLEAN_SERIALIZER})
 public class BooleanSerializer implements ValueSerializer {
 
 	@Override
@@ -22,16 +25,14 @@ public class BooleanSerializer implements ValueSerializer {
 			ExtensibleValueSerializationInitiated.newCase(this, anObject, anOutputBuffer);
 			Boolean value = (Boolean) anObject; 
 			Class bufferClass = anOutputBuffer.getClass(); 
-			if (bufferClass == ByteBuffer.class) {
-				//Binary encoding 
+			if (ByteBuffer.class.isAssignableFrom(bufferClass)) {
 				ByteBuffer bBuff = (ByteBuffer) anOutputBuffer;
 				bBuff.put(Boolean.class.getName().getBytes());
 				bBuff.putInt(value == true ? 1 : 0);
 			} else if (bufferClass == AStringBuffer.class) {
-				//Textual encoding 
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
 				Object[] args = {Boolean.class.getName() + (value == true ? 1 : 0) + ValueSerializer.DELIMETER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.sbAppend, args);
+				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Boolean value serializer");
 			}
@@ -44,40 +45,21 @@ public class BooleanSerializer implements ValueSerializer {
 	@Override
 	public Object objectFromBuffer(Object anInputBuffer, Class aClass, ArrayList<Object> retrievedObjects)
 			throws StreamCorruptedException, NotSerializableException {
-		Boolean retVal = null; 
+		Object retVal = null; 
 		if (aClass == Boolean.class) {
 			ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, aClass);
-			if (anInputBuffer instanceof ByteBuffer) {
-				//Decode from binary 
-				ByteBuffer bBuff = (ByteBuffer) anInputBuffer; 
-				int strLen = bBuff.getInt();
-				byte[] strBytes = new byte[strLen]; 
-				bBuff.get(strBytes);
-				retVal = Integer.parseInt(new String(strBytes)) == 1 ? true : false;
+			if (ByteBuffer.class.isAssignableFrom(anInputBuffer.getClass())) {
+				retVal = ((ByteBuffer) anInputBuffer).getInt() == 1 ? true : false;
 			} else if (anInputBuffer instanceof AStringBuffer) {
-				//Decode from textual representation 
-				AStringBuffer sBuff = (AStringBuffer) anInputBuffer;
-				String c = null;
-				StringBuilder sb = new StringBuilder(); 
-				while (true) {
-					c = sBuff.readCharacter(); 
-					if (c == null) {
-						throw new NotSerializableException("Unexpectedly reached end of StringBuffer");
-					} else if (c.equals(ValueSerializer.DELIMETER)) {
-						break; 
-					} else {
-						sb.append(c);
-					}
-				}
-				retVal = Integer.parseInt(sb.toString()) == 1 ? true : false;
+				retVal = Integer.parseInt(((AStringBuffer) anInputBuffer).readStringBufferTillDelimiter()) == 1 ? true : false;
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Boolean value serializer");
 			}
-			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, retVal, retrievedObjects);
-			return retVal;  
+			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, retVal, retrievedObjects); 
 		} else {
 			throw new NotSerializableException("Tried to deserialize a non Boolean type with the Boolean value serialzer");
 		}
+		return aClass.cast(retVal); 
 	}
 
 }

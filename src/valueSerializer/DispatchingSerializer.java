@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 import util.annotations.Comp533Tags;
 
-@Tags({Comp533Tags.DISPATCHING_SERIALIZER })
+@Tags({Comp533Tags.DISPATCHING_SERIALIZER})
 public interface DispatchingSerializer {
 	
 	void objectToBuffer (Object anOutputBuffer, Object anObject, ArrayList<Object> visitedObjects) 

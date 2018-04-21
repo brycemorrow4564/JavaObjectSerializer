@@ -1,6 +1,9 @@
 package general;
 
+import java.io.NotSerializableException;
 import java.lang.reflect.Method;
+
+import valueSerializer.ValueSerializer;
 
 public class AStringBuffer {
 	
@@ -20,12 +23,49 @@ public class AStringBuffer {
 		return position; 
 	}
 	
+	public boolean startsWith(String header) {
+		StringBuilder builder = new StringBuilder(); 
+		for (int i = position; i < header.length(); i++) {
+			builder.append(sb.charAt(i));
+		}
+		return header.equals(builder.toString());
+	}
 	
-	public String readCharacter() {
+	public String readStringBufferTillDelimiter() throws NotSerializableException {
+		Character c = null;
+		StringBuilder builder = new StringBuilder(); 
+		while (true) {
+			c = readCharacter(); 
+			if (c == null) {
+				throw new NotSerializableException("Unexpectedly reached end of StringBuffer");
+			} else if (c == ValueSerializer.DELIMETER) {
+				break; 
+			} else {
+				builder.append(c);
+			}
+		}
+		return builder.toString();
+	}
+	
+	public String readCharacters(int n) throws NotSerializableException {
+		Character c = null;
+		StringBuilder builder = new StringBuilder(); 
+		for (int i = 0; i < n; i++) {
+			c = readCharacter(); 
+			if (c == null) {
+				throw new NotSerializableException("Unexpectedly reached end of StringBuffer");
+			} else {
+				builder.append(c);
+			}
+		}
+		return builder.toString();
+	}
+	
+	public Character readCharacter() {
 		if (position >= sb.length()) {
 			return null;  
 		}
-		String c = Character.toString(sb.charAt(position));
+		Character c = sb.charAt(position);
 		position += 1; 
 		return c; 
 	}
