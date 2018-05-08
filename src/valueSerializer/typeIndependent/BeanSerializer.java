@@ -17,6 +17,7 @@ import java.util.Iterator;
 
 import general.AStringBuffer;
 import general.SerializerRegistry;
+import general.TypeIndependentSerializer;
 import util.annotations.Comp533Tags;
 import util.annotations.Tags;
 import util.misc.RemoteReflectionUtility;
@@ -28,12 +29,12 @@ import valueSerializer.DispatchingSerializer;
 import valueSerializer.ValueSerializer;
 
 @Tags({Comp533Tags.BEAN_SERIALIZER})
-public class BeanSerializer implements ValueSerializer {
+public class BeanSerializer implements ValueSerializer, TypeIndependentSerializer {
 
 	@Override
 	public void objectToBuffer(Object anOutputBuffer, Object anObject, ArrayList<Object> visitedObjects)
 			throws NotSerializableException {
-		if (anObject == null || anObject instanceof Serializable) {
+		if (anObject instanceof Serializable) {
 			ExtensibleValueSerializationInitiated.newCase(this, anObject, anOutputBuffer);
 			Class bufferClass = anOutputBuffer.getClass(); 
 			if (ByteBuffer.class.isAssignableFrom(bufferClass)) {
@@ -43,8 +44,8 @@ public class BeanSerializer implements ValueSerializer {
 			} else if (bufferClass == AStringBuffer.class) {
 				//Textual encoding 
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {SerializerRegistry.TYPE_FREE_HEADER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = SerializerRegistry.TYPE_FREE_HEADER;
+				sBuff.append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Bean value serializer");
 			}
@@ -62,6 +63,7 @@ public class BeanSerializer implements ValueSerializer {
 					}
 				}
 				DispatchingSerializer ds = SerializerRegistry.getDispatchingSerializer();
+				ds.objectToBuffer(anOutputBuffer, anObject.getClass().getName(), visitedObjects);
 				ds.objectToBuffer(anOutputBuffer, beanMap.keySet().size(), visitedObjects);
 				Iterator<String> iter = beanMap.keySet().iterator();
 				while (iter.hasNext()) {
@@ -86,6 +88,7 @@ public class BeanSerializer implements ValueSerializer {
 			DispatchingSerializer ds = SerializerRegistry.getDispatchingSerializer();
 			try {
 				Object bean = aClass.newInstance();
+				retrievedObjects.add(bean);
 				Integer beanSize = (Integer) ds.objectFromBuffer(anInputBuffer, retrievedObjects);
 				HashMap<String, PropertyDescriptor> pMap = new HashMap<String, PropertyDescriptor>();
 				for (PropertyDescriptor d : Introspector.getBeanInfo(aClass).getPropertyDescriptors()) { 
@@ -97,9 +100,8 @@ public class BeanSerializer implements ValueSerializer {
 					PropertyDescriptor p = pMap.get(pName);
 					if (p != null) { p.getWriteMethod().invoke(bean, pValue); }
 				}
-				retrievedObjects.add(bean);
 				ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, bean, retrievedObjects);
-				return aClass.cast(bean);	
+				return bean;	
 			} catch (Exception e) {
 				e.printStackTrace();
 				return null; 

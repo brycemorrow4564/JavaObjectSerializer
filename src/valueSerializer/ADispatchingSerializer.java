@@ -20,7 +20,7 @@ public class ADispatchingSerializer implements DispatchingSerializer {
 	
 	/* TODO: 
 	 * Add STRING_SERIALIZER tag to string serializer class when dewan fixes issue 
-	 * Add tags for logical binary/logical serializer factories. 
+	 * Add tags for logical binary/textual serializer factories. 
 	 */
 
 	@Override
@@ -39,8 +39,8 @@ public class ADispatchingSerializer implements DispatchingSerializer {
 				((ByteBuffer) anOutputBuffer).put(SerializerRegistry.REFERENCE_HEADER.getBytes());
 				((ByteBuffer) anOutputBuffer).putInt(offset);
 			} else if (anOutputBuffer.getClass() == AStringBuffer.class) {
-				Object[] args = {SerializerRegistry.REFERENCE_HEADER + offset + ValueSerializer.DELIMETER};
-				((AStringBuffer) anOutputBuffer).executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = SerializerRegistry.REFERENCE_HEADER + offset + ValueSerializer.DELIMETER;
+				((AStringBuffer) anOutputBuffer).append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type provided to dispatching serializer");
 			}
@@ -50,11 +50,12 @@ public class ADispatchingSerializer implements DispatchingSerializer {
 		Iterator classIterator = SerializerRegistry.getRegisteredValueSerializerClasses().iterator();
 		while (classIterator.hasNext()) {
 			if (targetClass == (Class) classIterator.next()) {
-				if (!isPrimitiveType(anObject)) { visitedObjects.add(anObject); }
+				if (isObject(anObject)) { visitedObjects.add(anObject); }
 				SerializerRegistry.getValueSerializer(targetClass).objectToBuffer(anOutputBuffer, anObject, visitedObjects);
 				return; 
 			}
 		}
+		visitedObjects.add(anObject);
 		//If we can't serialize with a registered ValueSerializer, this must be instance of Type Free object 
 		if (targetClass.isArray()) {
 			SerializerRegistry.getArraySerializer().objectToBuffer(anOutputBuffer, anObject, visitedObjects);
@@ -84,7 +85,7 @@ public class ADispatchingSerializer implements DispatchingSerializer {
 			if (bufferHeadMatchesString(anInputBuffer, aClass.getName())) {
 				removeHeader(anInputBuffer, aClass.getName());
 				Object obj = SerializerRegistry.getValueSerializer(aClass).objectFromBuffer(anInputBuffer, aClass, retrievedObjects);
-				if (!isPrimitiveType(aClass)) { retrievedObjects.add(obj); }
+				if (isObject(obj)) { retrievedObjects.add(obj); }
 				return obj; 
 			}
 		}
@@ -96,16 +97,18 @@ public class ADispatchingSerializer implements DispatchingSerializer {
 			try {
 				aClass = Class.forName(className);
 			} catch (ClassNotFoundException e) {
-				throw new NotSerializableException("Nonexistent class type: " + aClass.getName());
+				e.printStackTrace();
+				throw new NotSerializableException("Nonexistent class type");
 			}
+			Class deserializeClass = SerializerRegistry.getDeserializingClass(aClass);
 			if (aClass.isArray()) {
-				return SerializerRegistry.getArraySerializer().objectFromBuffer(anInputBuffer, aClass, retrievedObjects);
+				return SerializerRegistry.getArraySerializer().objectFromBuffer(anInputBuffer, deserializeClass, retrievedObjects);
 			} else if (aClass.isEnum()) {
-				return SerializerRegistry.getEnumSerializer().objectFromBuffer(anInputBuffer, aClass, retrievedObjects);
+				return SerializerRegistry.getEnumSerializer().objectFromBuffer(anInputBuffer, deserializeClass, retrievedObjects);
 			} else if (RemoteReflectionUtility.isList(aClass) && Serializable.class.isAssignableFrom(aClass)) {
-				return SerializerRegistry.getListPatternSerializer().objectFromBuffer(anInputBuffer, aClass, retrievedObjects);
+				return SerializerRegistry.getListPatternSerializer().objectFromBuffer(anInputBuffer, deserializeClass, retrievedObjects);
 			} else if (Serializable.class.isAssignableFrom(aClass)) {
-				return SerializerRegistry.getBeanSerializer().objectFromBuffer(anInputBuffer, aClass, retrievedObjects);
+				return SerializerRegistry.getBeanSerializer().objectFromBuffer(anInputBuffer, deserializeClass, retrievedObjects);
 			} else {
 				throw new NotSerializableException("Unrecognized type free class: " + aClass.getName());
 			}
@@ -113,7 +116,8 @@ public class ADispatchingSerializer implements DispatchingSerializer {
 		//Check if this is a reference header for object of previously serialized type 
 		if (bufferHeadMatchesString(anInputBuffer, SerializerRegistry.REFERENCE_HEADER)) {
 			removeHeader(anInputBuffer, SerializerRegistry.REFERENCE_HEADER);
-			int off = (Integer) objectFromBuffer(anInputBuffer, retrievedObjects);
+			int off = (Integer) SerializerRegistry.getValueSerializer(Integer.class)
+					.objectFromBuffer(anInputBuffer, Integer.class, retrievedObjects);
 			if (off >= 0) {
 				return retrievedObjects.get(off);
 			} else {
@@ -153,13 +157,12 @@ public class ADispatchingSerializer implements DispatchingSerializer {
 		}
 	}
 	
-	public static boolean isPrimitiveType(Object anObject) {
-		boolean retVal = true;  
-		for (Class c : new ArrayList<Class>(Arrays.asList(Integer.class, Short.class, Long.class, Double.class, 
-				Float.class, Boolean.class, String.class))) {
-			retVal = retVal || anObject.getClass() == c; 
-		}
-		return retVal; 
+	public static boolean isObject(Object anObject) {
+		boolean isPrimitive = 	anObject == null || 				anObject instanceof Long || 
+								anObject instanceof Double || 	anObject instanceof Integer || 
+								anObject instanceof Float || 	anObject instanceof Short || 
+								anObject instanceof Boolean || anObject instanceof String;
+		return !isPrimitive;
 	}
 
 }

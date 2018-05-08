@@ -15,7 +15,7 @@ import util.trace.port.serialization.extensible.ExtensibleValueSerializationFini
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationInitiated;
 import valueSerializer.ValueSerializer;
 
-//@Tags({Comp533Tags})
+@Tags({Comp533Tags.STRING_SERIALIZER})
 public class StringSerializer implements ValueSerializer {
 
 	@Override
@@ -32,8 +32,8 @@ public class StringSerializer implements ValueSerializer {
 				bBuff.put(str.getBytes());
 			} else if (bufferClass == AStringBuffer.class) {
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {String.class.getName() + str.length() + ValueSerializer.DELIMETER + str};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String s = String.class.getName() + str.length() + ValueSerializer.DELIMETER + str;
+				sBuff.append(s);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to String value serializer");
 			}

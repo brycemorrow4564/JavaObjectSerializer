@@ -34,8 +34,8 @@ public class HashtableSerializer implements ValueSerializer {
 				bBuff.putInt(map.size());
 			} else if (bufferClass == AStringBuffer.class) {
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {Hashtable.class.getName() + map.size() + ValueSerializer.DELIMETER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = Hashtable.class.getName() + map.size() + ValueSerializer.DELIMETER;
+				sBuff.append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Hashtable value serializer");
 			}
@@ -60,6 +60,7 @@ public class HashtableSerializer implements ValueSerializer {
 			ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, aClass);
 			DispatchingSerializer ds = SerializerRegistry.getDispatchingSerializer();
 			Hashtable map = new Hashtable();
+			retrievedObjects.add(map);
 			Integer numKeys = (Integer) SerializerRegistry.getValueSerializer(Integer.class)
 					.objectFromBuffer(anInputBuffer, Integer.class, retrievedObjects);
 			for (int i = 0; i < numKeys; i++) {
@@ -67,7 +68,6 @@ public class HashtableSerializer implements ValueSerializer {
 				Object v = ds.objectFromBuffer(anInputBuffer, retrievedObjects);
 				map.put(k, v);
 			}
-			retrievedObjects.add(map);
 			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, map, retrievedObjects);
 			return map;
 		} else {

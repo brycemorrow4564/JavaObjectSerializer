@@ -2,6 +2,7 @@ package general;
 
 import util.annotations.Tags;
 import util.trace.port.serialization.extensible.ExtensibleSerializationTraceUtility;
+import valueSerializer.ADispatchingSerializer;
 import valueSerializer.DispatchingSerializer;
 import valueSerializer.ValueSerializer;
 import valueSerializer.Collection.ArrayListSerializer;
@@ -12,6 +13,7 @@ import valueSerializer.base.DoubleSerializer;
 import valueSerializer.base.FloatSerializer;
 import valueSerializer.base.IntegerSerializer;
 import valueSerializer.base.LongSerializer;
+import valueSerializer.base.NullSerializer;
 import valueSerializer.base.ShortSerializer;
 import valueSerializer.base.StringSerializer;
 import valueSerializer.map.HashMapSerializer;
@@ -20,7 +22,6 @@ import valueSerializer.typeIndependent.ArraySerializer;
 import valueSerializer.typeIndependent.BeanSerializer;
 import valueSerializer.typeIndependent.EnumSerializer;
 import valueSerializer.typeIndependent.ListPatternSerializer;
-import valueSerializer.typeIndependent.NullSerializer;
 
 import java.io.NotSerializableException;
 import java.lang.reflect.Method;
@@ -37,6 +38,7 @@ import util.annotations.Comp533Tags;
 public class SerializerRegistry {
 	
 	protected static HashMap<Class, ValueSerializer> 	classToValueSerializerMap; 
+	protected static HashMap<Class, Class> 			classToAltDeserializerMap; 
 	
 	protected static DispatchingSerializer 	dispatchingSerializer; 
 	
@@ -46,7 +48,6 @@ public class SerializerRegistry {
 	protected static EnumSerializer 			enumSerializer; 
 	protected static NullSerializer 			nullSerializer; 
 	
-	public static Method stringBufferAppend; 
 	public static String NULL_HEADER = "NullClass";
 	public static String NULL_VALUE = "null";
 	public static String TYPE_FREE_HEADER = "TypeFreeH"; 
@@ -54,9 +55,12 @@ public class SerializerRegistry {
 	
 	static {
 		ExtensibleSerializationTraceUtility.setTracing();
-		acquireStringBufferMethods(); 
 		
 		classToValueSerializerMap = new HashMap<Class, ValueSerializer>();
+		classToAltDeserializerMap = new HashMap<Class, Class>();
+		
+		//Dispatching serializer
+		registerDispatchingSerializer(new ADispatchingSerializer());
 		
 		//valueSerializer.base 
 		registerValueSerializer(String.class, new StringSerializer());
@@ -86,20 +90,8 @@ public class SerializerRegistry {
 		//Allow us to deserialize an ArrayList as a Vector
 		registerDeserializingClass(ArrayList.class, Vector.class);
 	}
-	
-	public static void acquireStringBufferMethods() {
-		try { 
-			Class<?>[] paramTypes = {String.class};
-			SerializerRegistry.stringBufferAppend = StringBuffer.class.getMethod("append", paramTypes);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
 	public static void registerValueSerializer (Class aClass, ValueSerializer anExternalSerializer) {
-		if (classToValueSerializerMap.containsKey(aClass)) {
-			classToValueSerializerMap.remove(aClass);
-		}
 		classToValueSerializerMap.put(aClass, anExternalSerializer);
 	}
 
@@ -160,11 +152,13 @@ public class SerializerRegistry {
 	}
 	
 	public static void registerDeserializingClass(Class instanceClass, Class deserializeClass) {
-		if (classToValueSerializerMap.containsKey(instanceClass) 
-				&& classToValueSerializerMap.containsKey(instanceClass)) {
-			classToValueSerializerMap.remove(instanceClass);
-			classToValueSerializerMap.put(instanceClass, getValueSerializer(deserializeClass));
-		}
+		classToAltDeserializerMap.put(instanceClass, deserializeClass);
+	}
+	
+	public static Class getDeserializingClass(Class aClass) {
+		return (classToAltDeserializerMap.get(aClass) != null) ?
+				classToAltDeserializerMap.get(aClass) : 
+					aClass; 
 	}
 	
 }

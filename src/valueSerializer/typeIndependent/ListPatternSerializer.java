@@ -8,6 +8,7 @@ import java.util.ArrayList;
 
 import general.AStringBuffer;
 import general.SerializerRegistry;
+import general.TypeIndependentSerializer;
 import util.annotations.Comp533Tags;
 import util.annotations.Tags;
 import util.misc.RemoteReflectionUtility;
@@ -19,7 +20,7 @@ import valueSerializer.DispatchingSerializer;
 import valueSerializer.ValueSerializer;
 
 @Tags({Comp533Tags.LIST_PATTERN_SERIALIZER})
-public class ListPatternSerializer implements ValueSerializer {
+public class ListPatternSerializer implements ValueSerializer, TypeIndependentSerializer {
 	
 	@Override
 	public void objectToBuffer(Object anOutputBuffer, Object anObject, ArrayList<Object> visitedObjects)
@@ -34,8 +35,8 @@ public class ListPatternSerializer implements ValueSerializer {
 			} else if (bufferClass == AStringBuffer.class) {
 				//Textual encoding 
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {SerializerRegistry.TYPE_FREE_HEADER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = SerializerRegistry.TYPE_FREE_HEADER;
+				sBuff.append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to List Pattern value serializer");
 			}
@@ -60,17 +61,13 @@ public class ListPatternSerializer implements ValueSerializer {
 			ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, aClass);
 			DispatchingSerializer ds = SerializerRegistry.getDispatchingSerializer();
 			Object list = null; 
-			try {
-				list = aClass.newInstance();
-				retrievedObjects.add(list);
-				Integer len = (Integer) ds.objectFromBuffer(anInputBuffer, retrievedObjects);
-				for (int i = 0; i < len; i++) {
-					RemoteReflectionUtility.listAdd(list, ds.objectFromBuffer(anInputBuffer, retrievedObjects));
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			try { list = aClass.newInstance(); } 
+			catch (Exception e) { e.printStackTrace(); }
 			retrievedObjects.add(list);
+			Integer len = (Integer) ds.objectFromBuffer(anInputBuffer, retrievedObjects);
+			for (int i = 0; i < len; i++) {
+				RemoteReflectionUtility.listAdd(list, ds.objectFromBuffer(anInputBuffer, retrievedObjects));
+			}
 			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, list, retrievedObjects);
 			return list; 
 		} else {

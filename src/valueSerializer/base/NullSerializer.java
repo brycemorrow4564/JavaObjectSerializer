@@ -1,4 +1,4 @@
-package valueSerializer.typeIndependent;
+package valueSerializer.base;
 
 import java.io.NotSerializableException;
 import java.io.StreamCorruptedException;
@@ -7,12 +7,16 @@ import java.util.ArrayList;
 
 import general.AStringBuffer;
 import general.SerializerRegistry;
+import general.TypeIndependentSerializer;
+import util.annotations.Comp533Tags;
+import util.annotations.Tags;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationFinished;
 import util.trace.port.serialization.extensible.ExtensibleBufferDeserializationInitiated;
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationFinished;
 import util.trace.port.serialization.extensible.ExtensibleValueSerializationInitiated;
 import valueSerializer.ValueSerializer;
 
+@Tags({Comp533Tags.NULL_SERIALIZER})
 public class NullSerializer implements ValueSerializer {
 
 	@Override
@@ -29,8 +33,8 @@ public class NullSerializer implements ValueSerializer {
 			} else if (bufferClass == AStringBuffer.class) {
 				//Textual encoding 
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {SerializerRegistry.NULL_HEADER + SerializerRegistry.NULL_VALUE};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = SerializerRegistry.NULL_HEADER + SerializerRegistry.NULL_VALUE;
+				sBuff.append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Null value serializer");
 			}
@@ -44,11 +48,11 @@ public class NullSerializer implements ValueSerializer {
 	public Object objectFromBuffer(Object anInputBuffer, Class aClass, ArrayList<Object> retrievedObjects)
 			throws StreamCorruptedException, NotSerializableException {
 		String nullStr = null;			
-		ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, aClass);
+		ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, Object.class);
 		if (anInputBuffer instanceof ByteBuffer) {
 			ByteBuffer bBuff = (ByteBuffer) anInputBuffer; 
-			byte[] bytes = new byte[4];
-			bBuff.get(bytes, 0, 4);
+			byte[] bytes = new byte[SerializerRegistry.NULL_VALUE.length()];
+			bBuff.get(bytes, 0, SerializerRegistry.NULL_VALUE.length());
 			nullStr = new String(bytes);
 		} else if (anInputBuffer instanceof AStringBuffer) {
 			AStringBuffer sBuff = (AStringBuffer) anInputBuffer; 

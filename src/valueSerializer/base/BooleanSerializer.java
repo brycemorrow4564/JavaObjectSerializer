@@ -31,8 +31,8 @@ public class BooleanSerializer implements ValueSerializer {
 				bBuff.putInt(value == true ? 1 : 0);
 			} else if (bufferClass == AStringBuffer.class) {
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {Boolean.class.getName() + (value == true ? 1 : 0) + ValueSerializer.DELIMETER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = Boolean.class.getName() + (value == true ? 1 : 0) + ValueSerializer.DELIMETER;
+				sBuff.append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Boolean value serializer");
 			}

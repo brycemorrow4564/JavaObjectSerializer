@@ -12,11 +12,7 @@ public class AStringBuffer {
 	
 	public AStringBuffer(StringBuffer aSb) {
 		sb = aSb; 
-	}
-	
-	public AStringBuffer(StringBuffer aSb, int aPosition) {
-		sb = aSb;
-		position = aPosition;
+		position = 0;
 	}
 	
 	public int getPosition() {
@@ -25,9 +21,8 @@ public class AStringBuffer {
 	
 	public boolean startsWith(String header) {
 		StringBuilder builder = new StringBuilder(); 
-		for (int i = position; i < header.length(); i++) {
-			builder.append(sb.charAt(i));
-		}
+		if (sb.length() < header.length() + position) return false; 
+		for (int i = position; i < position + header.length(); i++) { builder.append(sb.charAt(i)); }
 		return header.equals(builder.toString());
 	}
 	
@@ -61,32 +56,21 @@ public class AStringBuffer {
 		return builder.toString();
 	}
 	
+	//returns null if no character to read 
 	public Character readCharacter() {
-		if (position >= sb.length()) {
-			return null;  
-		}
-		Character c = sb.charAt(position);
-		position += 1; 
-		return c; 
+		return (position >= sb.length()) ? null : sb.charAt(position++);
 	}
 	
-	public Object executeStringBufferMethod(Method method, Object[] args) {
-		/* Reflection based StringBuffer method executor. This isn't optimal but is a functional 
-		 * workaround as the StringBuffer class is final and we cannot subclass it 
-		 * directly. This has to do with thread safety issues but will not be impacted 
-		 * by our wrapper class. */
-		try {
-			Class<?>[] paramTypes = method.getParameterTypes();
-			String methodName = method.getName(); 
-			if (sb.getClass().getMethod(methodName, paramTypes).equals(method)) {
-				method.invoke(sb, args);
-			} else {
-				System.out.println("Error: called a methon a StringBuffer object that it does not have access to");
-			}
-		} catch (Exception e) {
-			System.out.println("Error: called a methon a StringBuffer object that it does not have access to");
-		}
-		return method;
+	public void append(String str) {
+		sb.append(str);
+	}
+	
+	public int length() {
+		return sb.length(); 
+	}
+	
+	public String toString() {
+		return sb.toString();
 	}
 	
 	public String substring(int start, int end) {

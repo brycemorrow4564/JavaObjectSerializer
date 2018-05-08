@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 import util.annotations.Comp533Tags;
 
-@Tags({Comp533Tags.VALUE_SERIALIZER, Comp533Tags.LOGICAL_BINARY_SERIALIZER, Comp533Tags.LOGICAL_TEXTUAL_SERIALIZER})
+@Tags({Comp533Tags.VALUE_SERIALIZER})
 public interface ValueSerializer {
 	
 	public static final Character DELIMETER = ':';

@@ -31,8 +31,8 @@ public class LongSerializer implements ValueSerializer {
 				bBuff.putLong(value);
 			} else if (bufferClass == AStringBuffer.class) {
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {Long.class.getName() + value + ValueSerializer.DELIMETER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = Long.class.getName() + value + ValueSerializer.DELIMETER;
+				sBuff.append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to Long value serializer");
 			}

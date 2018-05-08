@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Vector;
 
 import general.AStringBuffer;
 import general.SerializerRegistry;
@@ -18,7 +19,7 @@ import util.trace.port.serialization.extensible.ExtensibleValueSerializationInit
 import valueSerializer.DispatchingSerializer;
 import valueSerializer.ValueSerializer;
 
-@Tags({Comp533Tags.COLLECTION_SERIALIZER})
+@Tags({Comp533Tags.COLLECTION_SERIALIZER, Comp533Tags.SET_SERIALIZER})
 public class HashSetSerializer implements ValueSerializer {
 
 	@Override
@@ -34,8 +35,8 @@ public class HashSetSerializer implements ValueSerializer {
 				bBuff.putInt(coll.size());
 			} else if (bufferClass == AStringBuffer.class) {
 				AStringBuffer sBuff = (AStringBuffer) anOutputBuffer;
-				Object[] args = {HashSet.class.getName() + coll.size() + ValueSerializer.DELIMETER};
-				sBuff.executeStringBufferMethod(SerializerRegistry.stringBufferAppend, args);
+				String str = HashSet.class.getName() + coll.size() + ValueSerializer.DELIMETER;
+				sBuff.append(str);
 			} else {
 				throw new NotSerializableException("Buffer of unsupported type passed to HashSet value serializer");
 			}
@@ -56,13 +57,13 @@ public class HashSetSerializer implements ValueSerializer {
 		if (aClass == HashSet.class) {
 			ExtensibleBufferDeserializationInitiated.newCase(this, null, anInputBuffer, aClass);
 			DispatchingSerializer ds = SerializerRegistry.getDispatchingSerializer();
+			ValueSerializer intSerializer = SerializerRegistry.getValueSerializer(Integer.class);
+			Integer collLen = (Integer) intSerializer.objectFromBuffer(anInputBuffer, Integer.class, retrievedObjects);
 			HashSet coll = new HashSet<>();
-			Integer collLen = (Integer) SerializerRegistry.getValueSerializer(Integer.class)
-					.objectFromBuffer(anInputBuffer, Integer.class, retrievedObjects);
+			retrievedObjects.add(coll);
 			for (int i = 0; i < collLen; i++) {
 				coll.add(ds.objectFromBuffer(anInputBuffer, retrievedObjects));
 			}
-			retrievedObjects.add(coll);
 			ExtensibleBufferDeserializationFinished.newCase(this, null, anInputBuffer, coll, retrievedObjects);
 			return aClass.cast(coll); 
 		} else {
