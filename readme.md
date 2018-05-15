@@ -1,3 +1,4 @@
+```
 Top Down Recursive Descent Logical Serialization Grammar 
 This is the model that I used when implementing the serializer 
 
@@ -69,9 +70,7 @@ Some notes on Syntax:
 
 ----- NULL SERIALIZATION -----
 <Null Serialization> -> <Null Header> <String as bytes or String (Null value)> 
-
-
-
+```
 
 
 
