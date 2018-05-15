@@ -1,7 +1,9 @@
-```
-Top Down Recursive Descent Logical Serialization Grammar 
-This is the model that I used when implementing the serializer 
+# Testing 
+You need to to have JUnit5 added to your project build path in order to run the tests for the serializer. 
 
+# Top Down Recursive Descent Logical Serialization Grammar 
+
+```
 Some notes on Syntax: 
 	* The character '|' represents the logical OR 
 	* The character '*' represents an n-times repetition of some grammar component where n is the integer value of the previous grammar component. 
