@@ -3,6 +3,7 @@ You need to to have JUnit5 added to your project build path in order to run the 
 
 # Top Down Recursive Descent Logical Serialization Grammar 
 
+```
 Some notes on Syntax: 
 	* The character '|' represents the logical OR 
 	* The character '*' represents an n-times repetition of some grammar component where n is the integer value of the previous grammar component. 
